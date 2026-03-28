@@ -96,8 +96,39 @@ async def start_bot():
 
 if __name__ == "__main__":
 
-    Thread(target=start_web).start()
+    import asyncio
+import threading
+
+
+def start_flask():
+    web.run(host="0.0.0.0", port=10000)
+
+
+async def start_telegram():
+
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("pedido", pedido))
+    app.add_handler(CommandHandler("ranking", ranking))
+
+    await app.initialize()
+    await app.start()
+
+    print("Polling updates...")
+
+    await app.bot.initialize()
+
+    await app.updater.start_polling()
+
+    while True:
+        await asyncio.sleep(3600)
+
+
+if __name__ == "__main__":
+
+    threading.Thread(target=start_flask).start()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(start_bot())
+
+    loop.run_until_complete(start_telegram())
