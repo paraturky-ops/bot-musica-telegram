@@ -7,10 +7,6 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import asyncio
 
 TOKEN = os.getenv("TOKEN")
-WEBHOOK_PATH = f"/{TOKEN}"
-
-# Render define automáticamente esta variable
-WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_URL") + WEBHOOK_PATH
 
 FILE = "pedidos.csv"
 
@@ -45,7 +41,8 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
-            "Este pedido ya fue solicitado por:\n" + "\n".join(usuarios)
+            "Este pedido ya fue solicitado por:\n" +
+            "\n".join(usuarios)
         )
 
     nueva_fila = {
@@ -87,7 +84,7 @@ telegram_app.add_handler(CommandHandler("ranking", ranking))
 # WEBHOOK ENDPOINT
 # ======================
 
-@app.route(WEBHOOK_PATH, methods=["POST"])
+@app.route("/", methods=["POST"])
 def webhook():
 
     update = Update.de_json(request.get_json(force=True), telegram_app.bot)
@@ -103,18 +100,20 @@ def home():
 
 
 # ======================
-# STARTUP (CORRECTO PARA RENDER)
+# STARTUP CORRECTO
 # ======================
 
 async def setup():
 
     await telegram_app.initialize()
-    await telegram_app.bot.set_webhook(WEBHOOK_URL)
+
+    webhook_url = os.environ.get("RENDER_EXTERNAL_URL")
+
+    await telegram_app.bot.set_webhook(webhook_url)
 
 
 if __name__ == "__main__":
 
-    asyncio.get_event_loop().run_until_complete(setup())
+    asyncio.run(setup())
 
-    # ESTA LÍNEA ES LA CLAVE PARA RENDER
     app.run(host="0.0.0.0", port=10000)
