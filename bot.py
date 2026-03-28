@@ -88,8 +88,13 @@ keep_alive()
 
 app = Application.builder().token(TOKEN).build()
 
-app.add_handler(CommandHandler("pedido",pedido))
-app.add_handler(CommandHandler("ranking",ranking))
+app.add_handler(CommandHandler("pedido", pedido))
+app.add_handler(CommandHandler("ranking", ranking))
+
 
 import asyncio
-asyncio.run(app.run_polling())
+
+async def main():
+    await app.run_polling()
+
+asyncio.run(main())
