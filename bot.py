@@ -4,8 +4,8 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
-import asyncio
 import threading
+import asyncio
 
 
 TOKEN = os.getenv("TOKEN")
@@ -34,7 +34,8 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
-            "Este pedido ya fue solicitado por:\n" + "\n".join(usuarios)
+            "Este pedido ya fue solicitado por:\n" +
+            "\n".join(usuarios)
         )
 
     nueva_fila = {
@@ -44,6 +45,7 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
+
     df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
@@ -63,19 +65,27 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(texto)
 
 
+# =============================
+# FLASK KEEP ALIVE SERVER
+# =============================
+
 web = Flask(__name__)
 
 
 @web.route("/")
 def home():
-    return "Bot activo"
+    return "Bot activo 24/7"
 
 
-def start_web():
+def run_flask():
     web.run(host="0.0.0.0", port=10000)
 
 
-async def start_bot():
+# =============================
+# TELEGRAM BOT START
+# =============================
+
+async def main():
 
     app = Application.builder().token(TOKEN).build()
 
@@ -93,13 +103,14 @@ async def start_bot():
         await asyncio.sleep(3600)
 
 
+# =============================
+# START BOTH SERVICES
+# =============================
+
 if __name__ == "__main__":
 
-    # iniciar Flask en segundo plano
-    threading.Thread(target=start_web).start()
+    # iniciar flask en segundo plano
+    threading.Thread(target=run_flask).start()
 
-    # iniciar Telegram correctamente en Python 3.14
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(start_bot())
+    # iniciar telegram en hilo principal
+    asyncio.run(main())
