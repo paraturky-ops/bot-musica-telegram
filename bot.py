@@ -91,4 +91,5 @@ app = Application.builder().token(TOKEN).build()
 app.add_handler(CommandHandler("pedido",pedido))
 app.add_handler(CommandHandler("ranking",ranking))
 
-app.run_polling()
+import asyncio
+asyncio.run(app.run_polling())
