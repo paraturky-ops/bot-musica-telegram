@@ -94,7 +94,7 @@ app.add_handler(CommandHandler("ranking", ranking))
 
 import asyncio
 
-async def main():
-    await app.run_polling()
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
-asyncio.run(main())
+loop.run_until_complete(app.run_polling())
