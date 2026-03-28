@@ -4,13 +4,9 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
-from threading import Thread
 import asyncio
+import threading
 
-
-# ===============================
-# CONFIGURACIÓN GENERAL
-# ===============================
 
 TOKEN = os.getenv("TOKEN")
 
@@ -21,58 +17,37 @@ if not os.path.exists(FILE):
     df.to_csv(FILE, index=False)
 
 
-# ===============================
-# COMANDO /pedido
-# ===============================
-
 async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    usuario = (
-        update.message.from_user.username
-        or update.message.from_user.first_name
-    )
-
+    usuario = update.message.from_user.username or update.message.from_user.first_name
     texto = " ".join(context.args)
 
     if texto == "":
-        await update.message.reply_text(
-            "Escribe artista o link después del comando"
-        )
+        await update.message.reply_text("Escribe artista o link después del comando")
         return
 
     df = pd.read_csv(FILE)
 
-    coincidencias = df[
-        df["pedido"].str.lower() == texto.lower()
-    ]
+    coincidencias = df[df["pedido"].str.lower() == texto.lower()]
 
     if not coincidencias.empty:
-
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
-            "Este pedido ya fue solicitado por:\n"
-            + "\n".join(usuarios)
+            "Este pedido ya fue solicitado por:\n" + "\n".join(usuarios)
         )
 
     nueva_fila = {
         "usuario": usuario,
         "pedido": texto,
-        "fecha": datetime.now(),
+        "fecha": datetime.now()
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
-
     df.to_csv(FILE, index=False)
 
-    await update.message.reply_text(
-        "Pedido registrado correctamente"
-    )
+    await update.message.reply_text("Pedido registrado correctamente")
 
-
-# ===============================
-# COMANDO /ranking
-# ===============================
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -82,33 +57,23 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     texto = "Ranking de solicitantes:\n\n"
 
-    for i, (user, cantidad) in enumerate(
-        ranking.items(), start=1
-    ):
+    for i, (user, cantidad) in enumerate(ranking.items(), 1):
         texto += f"{i}. {user} – {cantidad}\n"
 
     await update.message.reply_text(texto)
 
-
-# ===============================
-# SERVIDOR WEB KEEP-ALIVE RENDER
-# ===============================
 
 web = Flask(__name__)
 
 
 @web.route("/")
 def home():
-    return "Bot activo 24/7"
+    return "Bot activo"
 
 
 def start_web():
     web.run(host="0.0.0.0", port=10000)
 
-
-# ===============================
-# BOT TELEGRAM
-# ===============================
 
 async def start_bot():
 
@@ -128,16 +93,12 @@ async def start_bot():
         await asyncio.sleep(3600)
 
 
-# ===============================
-# MAIN
-# ===============================
-
 if __name__ == "__main__":
 
-    # iniciar servidor web en segundo plano
-    Thread(target=start_web).start()
+    # iniciar Flask en segundo plano
+    threading.Thread(target=start_web).start()
 
-    # iniciar bot telegram con event loop compatible Python 3.14
+    # iniciar Telegram correctamente en Python 3.14
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
