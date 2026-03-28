@@ -66,7 +66,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(texto)
 
 
-# servidor web mínimo para Render
+# servidor web mínimo Render
 web = Flask(__name__)
 
 
@@ -75,14 +75,11 @@ def home():
     return "Bot activo"
 
 
-def run_web():
+def start_web():
     web.run(host="0.0.0.0", port=10000)
 
 
-Thread(target=run_web).start()
-
-
-async def main():
+async def start_bot():
 
     app = Application.builder().token(TOKEN).build()
 
@@ -98,6 +95,9 @@ async def main():
 
 
 if __name__ == "__main__":
+
+    Thread(target=start_web).start()
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(main())
+    loop.run_until_complete(start_bot())
