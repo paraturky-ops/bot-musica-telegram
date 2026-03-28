@@ -2,9 +2,9 @@ import os
 import pandas as pd
 from datetime import datetime
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.environ.get("TOKEN")
 
 FILE = "pedidos.csv"
 
@@ -15,7 +15,7 @@ if not os.path.exists(FILE):
 
 async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    usuario = update.message.from_user.username
+    usuario = update.message.from_user.username or update.message.from_user.first_name
     texto = " ".join(context.args)
 
     if texto == "":
@@ -63,7 +63,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(texto)
 
 
-app = ApplicationBuilder().token(TOKEN).build()
+app = Application.builder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("pedido",pedido))
 app.add_handler(CommandHandler("ranking",ranking))
