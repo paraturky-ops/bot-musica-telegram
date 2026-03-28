@@ -15,9 +15,9 @@ if not os.path.exists(FILE):
     df.to_csv(FILE, index=False)
 
 
-telegram_app = Application.builder().token(TOKEN).build()
-
 app = Flask(__name__)
+
+telegram_app = Application.builder().token(TOKEN).build()
 
 
 # ======================
@@ -52,7 +52,6 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
-
     df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
@@ -81,39 +80,35 @@ telegram_app.add_handler(CommandHandler("ranking", ranking))
 
 
 # ======================
-# WEBHOOK ENDPOINT
+# WEBHOOK RECEIVER
 # ======================
 
 @app.route("/", methods=["POST"])
-def webhook():
+async def webhook():
 
     update = Update.de_json(request.get_json(force=True), telegram_app.bot)
 
-    asyncio.run(telegram_app.process_update(update))
+    await telegram_app.process_update(update)
 
     return "ok"
 
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
     return "Bot activo 24/7 🚀"
 
 
 # ======================
-# STARTUP CORRECTO
+# STARTUP
 # ======================
 
 async def setup():
-
     await telegram_app.initialize()
+    await telegram_app.start()
 
-    webhook_url = os.environ.get("RENDER_EXTERNAL_URL")
 
-    await telegram_app.bot.set_webhook(webhook_url)
+asyncio.run(setup())
 
 
 if __name__ == "__main__":
-
-    asyncio.run(setup())
-
     app.run(host="0.0.0.0", port=10000)
