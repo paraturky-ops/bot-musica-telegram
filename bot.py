@@ -14,6 +14,7 @@ if not os.path.exists(FILE):
     df = pd.DataFrame(columns=["usuario", "pedido", "fecha"])
     df.to_csv(FILE, index=False)
 
+
 app = Flask(__name__)
 
 telegram_app = Application.builder().token(TOKEN).build()
@@ -52,7 +53,6 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
-
     df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
@@ -82,14 +82,19 @@ telegram_app.add_handler(CommandHandler("ranking", ranking))
 
 
 # ======================
-# INICIALIZAR BOT
+# LOOP GLOBAL
 # ======================
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-loop.run_until_complete(telegram_app.initialize())
-loop.run_until_complete(telegram_app.start())
+
+async def start_bot():
+    await telegram_app.initialize()
+    await telegram_app.start()
+
+
+loop.run_until_complete(start_bot())
 
 
 # ======================
@@ -99,9 +104,13 @@ loop.run_until_complete(telegram_app.start())
 @app.route("/", methods=["POST"])
 def webhook():
 
-    update = Update.de_json(request.get_json(force=True), telegram_app.bot)
+    json_data = request.get_json(force=True)
 
-    loop.run_until_complete(telegram_app.process_update(update))
+    update = Update.de_json(json_data, telegram_app.bot)
+
+    loop.run_until_complete(
+        telegram_app.process_update(update)
+    )
 
     return "ok"
 
@@ -112,7 +121,7 @@ def home():
 
 
 # ======================
-# SERVIDOR RENDER
+# RUN SERVER
 # ======================
 
 if __name__ == "__main__":
