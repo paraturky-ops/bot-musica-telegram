@@ -14,7 +14,6 @@ if not os.path.exists(FILE):
     df = pd.DataFrame(columns=["usuario", "pedido", "fecha"])
     df.to_csv(FILE, index=False)
 
-
 app = Flask(__name__)
 
 telegram_app = Application.builder().token(TOKEN).build()
@@ -38,6 +37,7 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coincidencias = df[df["pedido"].str.lower() == texto.lower()]
 
     if not coincidencias.empty:
+
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
@@ -52,6 +52,7 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
+
     df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
@@ -70,6 +71,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     texto = "Ranking de solicitantes:\n\n"
 
     for i, (user, cantidad) in enumerate(ranking.items(), 1):
+
         texto += f"{i}. {user} – {cantidad}\n"
 
     await update.message.reply_text(texto)
@@ -80,35 +82,38 @@ telegram_app.add_handler(CommandHandler("ranking", ranking))
 
 
 # ======================
-# WEBHOOK RECEIVER
+# INICIALIZAR BOT
+# ======================
+
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
+loop.run_until_complete(telegram_app.initialize())
+loop.run_until_complete(telegram_app.start())
+
+
+# ======================
+# WEBHOOK ENDPOINT
 # ======================
 
 @app.route("/", methods=["POST"])
-async def webhook():
+def webhook():
 
     update = Update.de_json(request.get_json(force=True), telegram_app.bot)
 
-    await telegram_app.process_update(update)
+    loop.run_until_complete(telegram_app.process_update(update))
 
     return "ok"
 
 
 @app.route("/", methods=["GET"])
 def home():
-    return "Bot activo 24/7 🚀"
+    return "Bot activo 🚀"
 
 
 # ======================
-# STARTUP
+# SERVIDOR RENDER
 # ======================
-
-async def setup():
-    await telegram_app.initialize()
-    await telegram_app.start()
-
-
-asyncio.run(setup())
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
