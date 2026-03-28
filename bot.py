@@ -7,14 +7,16 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import asyncio
 
 TOKEN = os.getenv("TOKEN")
+
 WEBHOOK_PATH = f"/{TOKEN}"
-WEBHOOK_URL = f"https://bot-musica-telegram-1.onrender.com{WEBHOOK_PATH}"
+WEBHOOK_URL = f"https://bot-musica-telegram.onrender.com{WEBHOOK_PATH}"
 
 FILE = "pedidos.csv"
 
 if not os.path.exists(FILE):
     df = pd.DataFrame(columns=["usuario", "pedido", "fecha"])
     df.to_csv(FILE, index=False)
+
 
 app = Flask(__name__)
 
@@ -39,6 +41,7 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coincidencias = df[df["pedido"].str.lower() == texto.lower()]
 
     if not coincidencias.empty:
+
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
@@ -108,6 +111,7 @@ if __name__ == "__main__":
 
     async def startup():
         await telegram_app.initialize()
+        await telegram_app.start()
         await telegram_app.bot.set_webhook(WEBHOOK_URL)
 
     asyncio.run(startup())
