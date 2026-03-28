@@ -7,9 +7,10 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 import asyncio
 
 TOKEN = os.getenv("TOKEN")
-
 WEBHOOK_PATH = f"/{TOKEN}"
-WEBHOOK_URL = f"https://bot-musica-telegram.onrender.com{WEBHOOK_PATH}"
+
+# Render define automáticamente esta variable
+WEBHOOK_URL = os.environ.get("RENDER_EXTERNAL_URL") + WEBHOOK_PATH
 
 FILE = "pedidos.csv"
 
@@ -18,9 +19,9 @@ if not os.path.exists(FILE):
     df.to_csv(FILE, index=False)
 
 
-app = Flask(__name__)
-
 telegram_app = Application.builder().token(TOKEN).build()
+
+app = Flask(__name__)
 
 
 # ======================
@@ -41,12 +42,10 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     coincidencias = df[df["pedido"].str.lower() == texto.lower()]
 
     if not coincidencias.empty:
-
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
-            "Este pedido ya fue solicitado por:\n" +
-            "\n".join(usuarios)
+            "Este pedido ya fue solicitado por:\n" + "\n".join(usuarios)
         )
 
     nueva_fila = {
@@ -85,7 +84,7 @@ telegram_app.add_handler(CommandHandler("ranking", ranking))
 
 
 # ======================
-# WEBHOOK RECEIVER
+# WEBHOOK ENDPOINT
 # ======================
 
 @app.route(WEBHOOK_PATH, methods=["POST"])
@@ -100,20 +99,22 @@ def webhook():
 
 @app.route("/")
 def home():
-    return "Bot activo"
+    return "Bot activo 24/7 🚀"
 
 
 # ======================
-# STARTUP
+# STARTUP (CORRECTO PARA RENDER)
 # ======================
+
+async def setup():
+
+    await telegram_app.initialize()
+    await telegram_app.bot.set_webhook(WEBHOOK_URL)
+
 
 if __name__ == "__main__":
 
-    async def startup():
-        await telegram_app.initialize()
-        await telegram_app.start()
-        await telegram_app.bot.set_webhook(WEBHOOK_URL)
+    asyncio.get_event_loop().run_until_complete(setup())
 
-    asyncio.run(startup())
-
+    # ESTA LÍNEA ES LA CLAVE PARA RENDER
     app.run(host="0.0.0.0", port=10000)
