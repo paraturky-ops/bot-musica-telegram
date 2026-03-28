@@ -3,6 +3,8 @@ import pandas as pd
 from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+from flask import Flask
+from threading import Thread
 
 TOKEN = os.environ.get("TOKEN")
 
@@ -61,6 +63,27 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
         texto += f"{i}. {user} – {cantidad}\n"
 
     await update.message.reply_text(texto)
+
+
+# servidor web mínimo para Render
+app_web = Flask('')
+
+
+@app_web.route('/')
+def home():
+    return "Bot activo"
+
+
+def run():
+    app_web.run(host="0.0.0.0", port=10000)
+
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+
+keep_alive()
 
 
 app = Application.builder().token(TOKEN).build()
