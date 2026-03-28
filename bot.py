@@ -5,7 +5,11 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
 from threading import Thread
-import asyncio
+
+
+# =============================
+# CONFIGURACIÓN
+# =============================
 
 TOKEN = os.getenv("TOKEN")
 
@@ -16,40 +20,58 @@ if not os.path.exists(FILE):
     df.to_csv(FILE, index=False)
 
 
+# =============================
+# COMANDO /pedido
+# =============================
+
 async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    usuario = update.message.from_user.username or update.message.from_user.first_name
+    usuario = (
+        update.message.from_user.username
+        or update.message.from_user.first_name
+    )
+
     texto = " ".join(context.args)
 
     if texto == "":
-        await update.message.reply_text("Escribe artista o link después del comando")
+        await update.message.reply_text(
+            "Escribe artista o link después del comando"
+        )
         return
 
     df = pd.read_csv(FILE)
 
-    coincidencias = df[df["pedido"].str.lower() == texto.lower()]
+    coincidencias = df[
+        df["pedido"].str.lower() == texto.lower()
+    ]
 
     if not coincidencias.empty:
 
         usuarios = coincidencias["usuario"].tolist()
 
         await update.message.reply_text(
-            "Este pedido ya fue solicitado por:\n" +
-            "\n".join(usuarios)
+            "Este pedido ya fue solicitado por:\n"
+            + "\n".join(usuarios)
         )
 
     nueva_fila = {
         "usuario": usuario,
         "pedido": texto,
-        "fecha": datetime.now()
+        "fecha": datetime.now(),
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
 
     df.to_csv(FILE, index=False)
 
-    await update.message.reply_text("Pedido registrado correctamente")
+    await update.message.reply_text(
+        "Pedido registrado correctamente"
+    )
 
+
+# =============================
+# COMANDO /ranking
+# =============================
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -59,14 +81,18 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     texto = "Ranking de solicitantes:\n\n"
 
-    for i, (user, cantidad) in enumerate(ranking.items(), 1):
-
+    for i, (user, cantidad) in enumerate(
+        ranking.items(), start=1
+    ):
         texto += f"{i}. {user} – {cantidad}\n"
 
     await update.message.reply_text(texto)
 
 
-# servidor web mínimo Render
+# =============================
+# SERVIDOR WEB (Render keep alive)
+# =============================
+
 web = Flask(__name__)
 
 
@@ -79,56 +105,31 @@ def start_web():
     web.run(host="0.0.0.0", port=10000)
 
 
-async def start_bot():
+# =============================
+# INICIO DEL BOT TELEGRAM
+# =============================
+
+def start_bot():
 
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("pedido", pedido))
     app.add_handler(CommandHandler("ranking", ranking))
 
-    await app.initialize()
-    await app.start()
-    await app.updater.start_polling()
-
-    while True:
-        await asyncio.sleep(3600)
-
-
-if __name__ == "__main__":
-
-    import asyncio
-import threading
-
-
-def start_flask():
-    web.run(host="0.0.0.0", port=10000)
-
-
-async def start_telegram():
-
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("pedido", pedido))
-    app.add_handler(CommandHandler("ranking", ranking))
-
-    await app.initialize()
-    await app.start()
-
+    print("Bot iniciado correctamente")
     print("Polling updates...")
 
-    await app.bot.initialize()
+    app.run_polling()
 
-    await app.updater.start_polling()
 
-    while True:
-        await asyncio.sleep(3600)
-
+# =============================
+# MAIN
+# =============================
 
 if __name__ == "__main__":
 
-    threading.Thread(target=start_flask).start()
+    # iniciar servidor web en segundo plano
+    Thread(target=start_web).start()
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-
-    loop.run_until_complete(start_telegram())
+    # iniciar bot telegram
+    start_bot()
