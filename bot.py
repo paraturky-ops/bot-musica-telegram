@@ -5,14 +5,15 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
 from threading import Thread
+import asyncio
 
-TOKEN = os.environ.get("TOKEN")
+TOKEN = os.getenv("TOKEN")
 
 FILE = "pedidos.csv"
 
 if not os.path.exists(FILE):
-    df = pd.DataFrame(columns=["usuario","pedido","fecha"])
-    df.to_csv(FILE,index=False)
+    df = pd.DataFrame(columns=["usuario", "pedido", "fecha"])
+    df.to_csv(FILE, index=False)
 
 
 async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -26,7 +27,7 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     df = pd.read_csv(FILE)
 
-    coincidencias = df[df["pedido"].str.lower()==texto.lower()]
+    coincidencias = df[df["pedido"].str.lower() == texto.lower()]
 
     if not coincidencias.empty:
 
@@ -38,14 +39,14 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     nueva_fila = {
-        "usuario":usuario,
-        "pedido":texto,
-        "fecha":datetime.now()
+        "usuario": usuario,
+        "pedido": texto,
+        "fecha": datetime.now()
     }
 
-    df = pd.concat([df,pd.DataFrame([nueva_fila])])
+    df = pd.concat([df, pd.DataFrame([nueva_fila])])
 
-    df.to_csv(FILE,index=False)
+    df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
 
@@ -58,7 +59,7 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     texto = "Ranking de solicitantes:\n\n"
 
-    for i,(user,cantidad) in enumerate(ranking.items(),1):
+    for i, (user, cantidad) in enumerate(ranking.items(), 1):
 
         texto += f"{i}. {user} – {cantidad}\n"
 
@@ -66,35 +67,35 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # servidor web mínimo para Render
-app_web = Flask('')
+web = Flask(__name__)
 
 
-@app_web.route('/')
+@web.route("/")
 def home():
     return "Bot activo"
 
 
-def run():
-    app_web.run(host="0.0.0.0", port=10000)
+def run_web():
+    web.run(host="0.0.0.0", port=10000)
 
 
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
+Thread(target=run_web).start()
 
 
-keep_alive()
+async def main():
+
+    app = Application.builder().token(TOKEN).build()
+
+    app.add_handler(CommandHandler("pedido", pedido))
+    app.add_handler(CommandHandler("ranking", ranking))
+
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    while True:
+        await asyncio.sleep(3600)
 
 
-app = Application.builder().token(TOKEN).build()
-
-app.add_handler(CommandHandler("pedido", pedido))
-app.add_handler(CommandHandler("ranking", ranking))
-
-
-import asyncio
-
-loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-
-loop.run_until_complete(app.run_polling())
+if __name__ == "__main__":
+    asyncio.run(main())
