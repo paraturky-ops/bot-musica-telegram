@@ -8,12 +8,13 @@ import asyncio
 
 TOKEN = os.getenv("TOKEN")
 
+GROUP_ID = -5070357519  # ID del grupo Pedidos MCM Bot
+
 FILE = "pedidos.csv"
 
 if not os.path.exists(FILE):
     df = pd.DataFrame(columns=["usuario", "pedido", "fecha"])
     df.to_csv(FILE, index=False)
-
 
 app = Flask(__name__)
 
@@ -53,9 +54,22 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])])
+
     df.to_csv(FILE, index=False)
 
     await update.message.reply_text("Pedido registrado correctamente")
+
+    # ENVIAR NOTIFICACIÓN AL GRUPO
+
+    mensaje = f"""
+🎧 Nuevo pedido recibido
+
+👤 Usuario: @{usuario}
+🎵 Pedido: {texto}
+📅 Fecha: {datetime.now().strftime("%d/%m/%Y %H:%M")}
+"""
+
+    await context.bot.send_message(chat_id=GROUP_ID, text=mensaje)
 
 
 # ======================
