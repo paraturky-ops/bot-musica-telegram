@@ -5,11 +5,12 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
 from threading import Thread
+import asyncio
 
 
-# =============================
-# CONFIGURACIÓN
-# =============================
+# ===============================
+# CONFIGURACIÓN GENERAL
+# ===============================
 
 TOKEN = os.getenv("TOKEN")
 
@@ -20,9 +21,9 @@ if not os.path.exists(FILE):
     df.to_csv(FILE, index=False)
 
 
-# =============================
+# ===============================
 # COMANDO /pedido
-# =============================
+# ===============================
 
 async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -69,9 +70,9 @@ async def pedido(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# =============================
+# ===============================
 # COMANDO /ranking
-# =============================
+# ===============================
 
 async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
@@ -89,27 +90,27 @@ async def ranking(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(texto)
 
 
-# =============================
-# SERVIDOR WEB (Render keep alive)
-# =============================
+# ===============================
+# SERVIDOR WEB KEEP-ALIVE RENDER
+# ===============================
 
 web = Flask(__name__)
 
 
 @web.route("/")
 def home():
-    return "Bot activo"
+    return "Bot activo 24/7"
 
 
 def start_web():
     web.run(host="0.0.0.0", port=10000)
 
 
-# =============================
-# INICIO DEL BOT TELEGRAM
-# =============================
+# ===============================
+# BOT TELEGRAM
+# ===============================
 
-def start_bot():
+async def start_bot():
 
     app = Application.builder().token(TOKEN).build()
 
@@ -119,17 +120,25 @@ def start_bot():
     print("Bot iniciado correctamente")
     print("Polling updates...")
 
-    app.run_polling()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    while True:
+        await asyncio.sleep(3600)
 
 
-# =============================
+# ===============================
 # MAIN
-# =============================
+# ===============================
 
 if __name__ == "__main__":
 
     # iniciar servidor web en segundo plano
     Thread(target=start_web).start()
 
-    # iniciar bot telegram
-    start_bot()
+    # iniciar bot telegram con event loop compatible Python 3.14
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    loop.run_until_complete(start_bot())
